@@ -5,7 +5,7 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
-const GITHUB_URL: &str = "https://github.com/ai-usage-hud/ai-usage-hud";
+const GITHUB_URL: &str = "https://github.com/jroed23/ai-usage-hud";
 
 #[tauri::command]
 fn claude_snapshot() -> Option<serde_json::Value> {
