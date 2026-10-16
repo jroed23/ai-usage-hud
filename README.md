@@ -11,7 +11,8 @@ A tiny, always-on-top, draggable HUD for Windows that shows how much of your AI 
 
 - Floating, transparent HUD: always on top (optional), draggable, position remembered per monitor
 - Four view modes: Minimal (icons), Compact (icon + %), Detailed, Expanded
-- Hover panel with adaptive metrics, reset times and "updated Xs ago"
+- Drag the Claude mascot icon anywhere; click it to open the usage panel, click again to close
+- Click panel with adaptive metrics, reset times and "updated Xs ago"
 - System tray: show/hide, refresh, settings
 - Local first and privacy focused: no account, no server, no telemetry
 - Provider architecture: each AI is an isolated plugin-like module; one failing never affects the others
@@ -48,7 +49,7 @@ pnpm tauri build    # installer in src-tauri/target/release/bundle/
 
 ## Documentation
 
-[architecture](docs/architecture.md) · [providers](docs/providers.md) · [security](docs/security.md) · [privacy](docs/privacy.md) · [development](docs/development.md) · [creating a provider](docs/creating-a-provider.md) · [troubleshooting](docs/troubleshooting.md)
+[architecture](docs/architecture.md) · [providers](docs/providers.md) · [security](docs/security.md) · [privacy](docs/privacy.md) · [development](docs/development.md) · [creating a provider](docs/creating-a-provider.md) · [troubleshooting](docs/troubleshooting.md) · [brand assets](docs/brand-assets.md)
 
 ## Roadmap
 

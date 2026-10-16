@@ -33,7 +33,9 @@ export function Hud() {
   const { ready, settings, usage, providers, init, reloadSettings, refresh, updateSettings } =
     useHudStore();
   const rootRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState<string | null>(null);
+  // Provider whose details panel is open (toggled by clicking its icon).
+  const [opened, setOpened] = useState<string | null>(null);
+  const press = useRef<{ x: number; y: number } | null>(null);
 
   const visible = useMemo(
     () => providers.filter((p) => settings.enabledProviders.includes(p.id)),
@@ -70,21 +72,34 @@ export function Hud() {
 
   usePersistedPosition(ready, settings.position, (position) => void updateSettings({ position }));
 
-  const hover = settings.viewMode === "minimal" || settings.viewMode === "compact";
-  const needsClock = settings.viewMode === "expanded" || (hover && hovered !== null);
+  const popup = settings.viewMode === "minimal" || settings.viewMode === "compact";
+  const needsClock = settings.viewMode === "expanded" || (popup && opened !== null);
   const now = useNow(needsClock);
 
   useAutoSize(rootRef, [
     settings.viewMode,
     settings.scale,
     visible.length,
-    hovered,
+    opened,
     usage,
     ready,
   ]);
 
-  const startDrag = (e: MouseEvent) => {
-    if (e.button === 0) void getCurrentWindow().startDragging();
+  // A press that moves more than a few px becomes a window drag; a press that
+  // does not move stays a click (startDragging swallows the click otherwise).
+  const onDown = (e: MouseEvent) => {
+    if (e.button === 0) press.current = { x: e.clientX, y: e.clientY };
+  };
+  const onMove = (e: MouseEvent) => {
+    const p = press.current;
+    if (!p || !(e.buttons & 1)) return;
+    if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 4) {
+      press.current = null;
+      void getCurrentWindow().startDragging();
+    }
+  };
+  const onUp = () => {
+    press.current = null;
   };
 
   const style = {
@@ -92,15 +107,17 @@ export function Hud() {
     zoom: settings.scale,
   } as React.CSSProperties;
 
-  const hoveredProvider = visible.find((p) => p.id === hovered);
+  const openProvider = visible.find((p) => p.id === opened);
 
   return (
     <div
       ref={rootRef}
       className={`hud theme-${settings.theme} mode-${settings.viewMode} ${settings.animations ? "anim" : ""}`}
       style={style}
-      onMouseDown={startDrag}
-      onMouseLeave={() => setHovered(null)}
+      onMouseDown={onDown}
+      onMouseMove={onMove}
+      onMouseUp={onUp}
+      onMouseLeave={onUp}
       onContextMenu={(e) => e.preventDefault()}
     >
       {ready && visible.length === 0 && (
@@ -129,7 +146,7 @@ export function Hud() {
         </div>
       )}
 
-      {visible.length > 0 && hover && (
+      {visible.length > 0 && popup && (
         <>
           <div className="chips">
             {visible.map((p) => (
@@ -138,15 +155,15 @@ export function Hud() {
                 provider={p}
                 data={usage[p.id]}
                 showPercent={settings.viewMode === "compact"}
-                onEnter={() => setHovered(p.id)}
+                onClick={() => setOpened((cur) => (cur === p.id ? null : p.id))}
               />
             ))}
           </div>
-          {hoveredProvider && (
-            <div className="panel hover-panel">
+          {openProvider && (
+            <div className="panel open-panel">
               <ProviderDetails
-                provider={hoveredProvider}
-                data={usage[hoveredProvider.id]}
+                provider={openProvider}
+                data={usage[openProvider.id]}
                 now={now}
               />
             </div>
@@ -166,16 +183,16 @@ function Chip({
   provider,
   data,
   showPercent,
-  onEnter,
+  onClick,
 }: {
   provider: UsageProvider;
   data?: UsageData;
   showPercent: boolean;
-  onEnter: () => void;
+  onClick: () => void;
 }) {
   const percent = primaryPercent(data);
   return (
-    <div className="chip" onMouseEnter={onEnter}>
+    <div className="chip" onClick={onClick}>
       <ProviderIcon provider={provider} dot={dotFor(data)} />
       {showPercent && (
         <span className={percent === undefined ? "pct pct-na" : `pct lvl-${levelFor(percent)}`}>

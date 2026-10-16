@@ -55,6 +55,8 @@ export interface ProviderBrand {
   docsUrl: string;
   /** Whether the official logo is bundled. False = generic glyph is used. */
   officialLogo: boolean;
+  /** URL of the bundled mark (imported asset). Falls back to the glyph when absent. */
+  logo?: string;
 }
 
 export interface Detection {

@@ -1,8 +1,43 @@
 import { useEffect, type RefObject } from "react";
 import { LogicalSize, PhysicalPosition } from "@tauri-apps/api/dpi";
-import { availableMonitors, getCurrentWindow } from "@tauri-apps/api/window";
+import { availableMonitors, currentMonitor, getCurrentWindow } from "@tauri-apps/api/window";
 import { resolvePosition } from "../utils/position";
 import type { Settings } from "../services/storage/settings";
+
+/** Set while the app itself moves the window, so those moves are not saved as user positions. */
+let programmaticMove = false;
+/** Where the user left the HUD before it was nudged to fit on screen. */
+let restoreTo: PhysicalPosition | null = null;
+
+/**
+ * When the window grows past the monitor edge (panel opened near a corner),
+ * shift it just enough to stay visible; shift it back once it shrinks again.
+ */
+async function fitOnScreen(win: ReturnType<typeof getCurrentWindow>) {
+  const [mon, pos, size] = await Promise.all([currentMonitor(), win.outerPosition(), win.outerSize()]);
+  if (!mon) return;
+  const maxX = mon.position.x + mon.size.width - size.width;
+  const maxY = mon.position.y + mon.size.height - size.height;
+  const x = Math.max(mon.position.x, Math.min(pos.x, maxX));
+  const y = Math.max(mon.position.y, Math.min(pos.y, maxY));
+  let target: PhysicalPosition | null = null;
+  if (x !== pos.x || y !== pos.y) {
+    restoreTo ??= new PhysicalPosition(pos.x, pos.y);
+    target = new PhysicalPosition(x, y);
+  } else if (restoreTo) {
+    const fitsBack =
+      restoreTo.x <= maxX && restoreTo.y <= maxY && restoreTo.x >= mon.position.x && restoreTo.y >= mon.position.y;
+    if (fitsBack) {
+      target = restoreTo;
+      restoreTo = null;
+    }
+  }
+  if (target) {
+    programmaticMove = true;
+    await win.setPosition(target);
+    setTimeout(() => (programmaticMove = false), 700);
+  }
+}
 
 /** Keeps the transparent window exactly as large as the HUD content. */
 export function useAutoSize(ref: RefObject<HTMLElement | null>, deps: unknown[]) {
@@ -18,7 +53,7 @@ export function useAutoSize(ref: RefObject<HTMLElement | null>, deps: unknown[])
       const key = `${w}x${h}`;
       if (w > 0 && h > 0 && key !== last) {
         last = key;
-        void win.setSize(new LogicalSize(w, h));
+        void win.setSize(new LogicalSize(w, h)).then(() => fitOnScreen(win));
       }
     };
     const ro = new ResizeObserver(apply);
@@ -56,6 +91,8 @@ export function usePersistedPosition(
       if (cancelled) return;
 
       unlisten = await win.onMoved(({ payload }) => {
+        if (programmaticMove) return;
+        restoreTo = null; // the user placed it: nothing to restore
         clearTimeout(timer);
         timer = setTimeout(() => {
           const m = monitors.find(

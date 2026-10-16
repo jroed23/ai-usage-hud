@@ -71,6 +71,7 @@ body {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
 }
 .chip {
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -104,7 +105,7 @@ body {
   color: var(--muted);
   font-size: 10px;
 }
-.anim .hover-panel {
+.anim .open-panel {
   animation: pop 0.12s ease-out;
 }
 @keyframes pop {
@@ -116,12 +117,19 @@ body {
 
 .picon {
   position: relative;
+  display: inline-flex;
+  flex: none;
+  color: #fff;
+  font-weight: 700;
+}
+.picon img {
+  display: block;
+  pointer-events: none;
+}
+.picon-glyph {
   display: inline-grid;
   place-items: center;
   border-radius: 50%;
-  color: #fff;
-  font-weight: 700;
-  flex: none;
 }
 .picon-dot {
   position: absolute;
