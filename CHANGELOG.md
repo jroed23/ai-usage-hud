@@ -2,7 +2,7 @@
 
 All notable changes are documented here. Format based on Keep a Changelog; versions follow SemVer.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-10-16
 
 ### Added
 - Floating HUD (transparent, always on top, draggable, multi-monitor aware, position persisted)
