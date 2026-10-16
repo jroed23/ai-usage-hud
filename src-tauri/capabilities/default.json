@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the HUD and settings windows",
+  "description": "Least-privilege permissions for the HUD and settings windows",
   "windows": ["hud", "settings"],
   "permissions": [
     "core:default",
@@ -10,17 +10,12 @@
     "core:window:allow-set-position",
     "core:window:allow-outer-position",
     "core:window:allow-outer-size",
-    "core:window:allow-scale-factor",
     "core:window:allow-set-always-on-top",
     "core:window:allow-available-monitors",
     "core:window:allow-current-monitor",
-    "core:window:allow-show",
-    "core:window:allow-hide",
-    "core:window:allow-close",
     "store:default",
     "autostart:allow-enable",
     "autostart:allow-disable",
-    "autostart:allow-is-enabled",
-    "opener:allow-open-url"
+    "autostart:allow-is-enabled"
   ]
 }

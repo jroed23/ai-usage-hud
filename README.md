@@ -49,7 +49,7 @@ pnpm tauri build    # installer in src-tauri/target/release/bundle/
 
 ## Documentation
 
-[architecture](docs/architecture.md) · [providers](docs/providers.md) · [security](docs/security.md) · [privacy](docs/privacy.md) · [development](docs/development.md) · [creating a provider](docs/creating-a-provider.md) · [troubleshooting](docs/troubleshooting.md) · [brand assets](docs/brand-assets.md)
+[architecture](docs/architecture.md) · [providers](docs/providers.md) · [security](docs/security.md) · [privacy](docs/privacy.md) · [development](docs/development.md) · [creating a provider](docs/creating-a-provider.md) · [troubleshooting](docs/troubleshooting.md) · [brand assets](docs/brand-assets.md) · [security review](docs/security-review.md)
 
 ## Roadmap
 

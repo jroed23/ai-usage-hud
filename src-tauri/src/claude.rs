@@ -90,9 +90,7 @@ pub fn detect() -> Detection {
     let installed = dirs::home_dir()
         .map(|h| h.join(".claude").exists())
         .unwrap_or(false);
-    let connected = read_settings()
-        .map(|s| is_relay(&s))
-        .unwrap_or(false);
+    let connected = read_settings().map(|s| is_relay(&s)).unwrap_or(false);
     Detection { installed, connected }
 }
 
@@ -103,12 +101,27 @@ fn is_relay(settings: &Value) -> bool {
         .unwrap_or(false)
 }
 
-/// None = file exists but is not valid JSON. Missing file = empty settings.
-fn read_settings() -> Option<Value> {
-    let path = claude_settings_path()?;
-    match fs::read(&path) {
-        Ok(bytes) => serde_json::from_slice(&bytes).ok(),
-        Err(_) => Some(json!({})),
+/// A missing file means empty settings. Any other problem (unreadable, not
+/// JSON, not an object) is an error so we never overwrite a file we did not
+/// understand.
+fn read_settings() -> Result<Value, String> {
+    let path = claude_settings_path().ok_or("home directory not found")?;
+    parse_settings(fs::read(&path))
+}
+
+fn parse_settings(read: std::io::Result<Vec<u8>>) -> Result<Value, String> {
+    match read {
+        Ok(bytes) => {
+            let v: Value = serde_json::from_slice(&bytes)
+                .map_err(|_| "~/.claude/settings.json is not valid JSON; refusing to modify it")?;
+            if v.is_object() {
+                Ok(v)
+            } else {
+                Err("~/.claude/settings.json is not a JSON object; refusing to modify it".into())
+            }
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(json!({})),
+        Err(e) => Err(format!("cannot read ~/.claude/settings.json: {e}")),
     }
 }
 
@@ -120,8 +133,7 @@ pub fn read_snapshot() -> Option<Value> {
 /// Register the relay as the Claude Code status line, preserving any existing one.
 pub fn connect(exe: &str) -> Result<(), String> {
     let path = claude_settings_path().ok_or("home directory not found")?;
-    let mut settings = read_settings()
-        .ok_or("~/.claude/settings.json is not valid JSON; refusing to modify it")?;
+    let mut settings = read_settings()?;
 
     if let Some(cmd) = settings["statusLine"]["command"].as_str() {
         if !cmd.contains("--relay") {
@@ -146,8 +158,7 @@ pub fn connect(exe: &str) -> Result<(), String> {
 /// Remove the relay; restore the user's previous status line if there was one.
 pub fn disconnect() -> Result<(), String> {
     let path = claude_settings_path().ok_or("home directory not found")?;
-    let mut settings = read_settings()
-        .ok_or("~/.claude/settings.json is not valid JSON; refusing to modify it")?;
+    let mut settings = read_settings()?;
     if !is_relay(&settings) {
         return Ok(());
     }
@@ -164,9 +175,16 @@ pub fn disconnect() -> Result<(), String> {
     Ok(())
 }
 
+/// Write to a temp file and rename so a crash can never leave a half-written
+/// settings.json behind.
 fn write_settings(path: &PathBuf, settings: &Value) -> Result<(), String> {
     let bytes = serde_json::to_vec_pretty(settings).map_err(|e| e.to_string())?;
-    fs::write(path, bytes).map_err(|e| e.to_string())
+    let tmp = path.with_file_name("settings.json.ai-usage-hud.tmp");
+    fs::write(&tmp, bytes).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, path).map_err(|e| {
+        let _ = fs::remove_file(&tmp);
+        e.to_string()
+    })
 }
 
 #[cfg(test)]
@@ -193,6 +211,16 @@ mod tests {
     fn missing_windows_are_null_not_zero() {
         let s = sanitize(&json!({})).unwrap();
         assert!(s["fiveHour"].is_null() && s["contextUsedPercentage"].is_null());
+    }
+
+    #[test]
+    fn settings_parsing_never_hides_problems() {
+        use std::io::{Error, ErrorKind};
+        assert_eq!(parse_settings(Err(Error::from(ErrorKind::NotFound))).unwrap(), json!({}));
+        assert!(parse_settings(Err(Error::from(ErrorKind::PermissionDenied))).is_err());
+        assert!(parse_settings(Ok(b"{ not json".to_vec())).is_err());
+        assert!(parse_settings(Ok(b"[1,2]".to_vec())).is_err());
+        assert_eq!(parse_settings(Ok(br#"{"a":1}"#.to_vec())).unwrap()["a"], 1);
     }
 
     #[test]
