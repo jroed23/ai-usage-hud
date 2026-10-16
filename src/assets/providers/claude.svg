@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 447 372" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 447 279" shape-rendering="crispEdges">
   <defs>
-    <mask id="eyes" maskUnits="userSpaceOnUse" x="0" y="0" width="447" height="372">
-      <rect width="447" height="372" fill="#fff"/>
+    <mask id="eyes" maskUnits="userSpaceOnUse" x="0" y="0" width="447" height="279">
+      <rect width="447" height="279" fill="#fff"/>
       <rect x="112" y="57" width="27" height="54" fill="#000"/>
       <rect x="307" y="57" width="28" height="54" fill="#000"/>
     </mask>
@@ -9,9 +9,9 @@
   <g fill="#DE7B59" mask="url(#eyes)">
     <rect x="56" y="0" width="335" height="225"/>
     <rect x="0" y="111" width="447" height="57"/>
-    <rect x="84" y="225" width="27" height="147"/>
-    <rect x="139" y="225" width="28" height="147"/>
-    <rect x="279" y="225" width="28" height="147"/>
-    <rect x="335" y="225" width="28" height="147"/>
+    <rect x="84" y="225" width="27" height="54"/>
+    <rect x="139" y="225" width="28" height="54"/>
+    <rect x="279" y="225" width="28" height="54"/>
+    <rect x="335" y="225" width="28" height="54"/>
   </g>
 </svg>
