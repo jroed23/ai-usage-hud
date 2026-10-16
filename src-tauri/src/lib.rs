@@ -28,8 +28,10 @@ fn claude_disconnect() -> Result<(), String> {
     claude::disconnect()
 }
 
+// Async on purpose: creating a window from a sync command runs on the main
+// thread and deadlocks on Windows.
 #[tauri::command]
-fn open_settings(app: AppHandle) -> Result<(), String> {
+async fn open_settings(app: AppHandle) -> Result<(), String> {
     show_settings(&app)
 }
 
