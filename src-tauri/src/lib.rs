@@ -124,6 +124,9 @@ pub fn run() {
         ])
         .setup(|app| {
             build_tray(app.handle())?;
+            if let Ok(exe) = std::env::current_exe() {
+                claude::refresh_relay_if_connected(&exe.to_string_lossy());
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

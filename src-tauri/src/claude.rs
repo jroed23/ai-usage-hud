@@ -67,9 +67,46 @@ pub fn summary_line(payload: &Value) -> String {
 pub fn write_snapshot(snapshot: &Value) -> std::io::Result<()> {
     let dir = data_dir();
     fs::create_dir_all(&dir)?;
+    let merged = match read_snapshot() {
+        Some(old) => merge_snapshot(&old, snapshot),
+        None => snapshot.clone(),
+    };
     let tmp = dir.join("claude-usage.json.tmp");
-    fs::write(&tmp, serde_json::to_vec(snapshot)?)?;
+    fs::write(&tmp, serde_json::to_vec(&merged)?)?;
     fs::rename(tmp, snapshot_path())
+}
+
+/// Several Claude Code sessions can run at once and each one reports the
+/// limits it saw at its own last API response, so an idle session would
+/// overwrite fresh numbers with old ones. Usage inside one window never goes
+/// down, so for the same window keep the highest value, and always prefer a
+/// later window.
+fn merge_snapshot(old: &Value, new: &Value) -> Value {
+    let mut out = new.clone();
+    for key in ["fiveHour", "sevenDay"] {
+        out[key] = merge_window(&old[key], &new[key]);
+    }
+    out
+}
+
+fn merge_window(old: &Value, new: &Value) -> Value {
+    if old.is_null() {
+        return new.clone();
+    }
+    if new.is_null() {
+        // Keep the old window only while it has not reset yet.
+        let alive = old["resetsAt"].as_u64().map(|r| r > now_secs()).unwrap_or(false);
+        return if alive { old.clone() } else { Value::Null };
+    }
+    let (old_reset, new_reset) = (old["resetsAt"].as_u64(), new["resetsAt"].as_u64());
+    match (old_reset, new_reset) {
+        (Some(o), Some(n)) if n > o + 60 => new.clone(),
+        (Some(o), Some(n)) if o > n + 60 => old.clone(),
+        _ => {
+            let (op, np) = (old["usedPercentage"].as_f64(), new["usedPercentage"].as_f64());
+            if op.unwrap_or(0.0) > np.unwrap_or(0.0) { old.clone() } else { new.clone() }
+        }
+    }
 }
 
 pub fn read_chain() -> Option<String> {
@@ -150,15 +187,46 @@ pub fn connect(exe: &str) -> Result<(), String> {
     } else if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
-    settings["statusLine"] = json!({ "type": "command", "command": relay_command(exe) });
+    install_relay(exe)?;
+    settings["statusLine"] = json!({ "type": "command", "command": RELAY_COMMAND });
     write_settings(&path, &settings)
 }
 
-/// Claude Code runs status line commands through Git Bash on Windows, where
-/// backslashes in the path are eaten as escapes and the command silently fails.
-/// Forward slashes work in Git Bash, cmd and PowerShell alike.
-fn relay_command(exe: &str) -> String {
-    format!("\"{}\" --relay", exe.replace('\\', "/"))
+/// Claude Code cannot reach executables under AppData from its status line
+/// shell (bash reports "No such file or directory"), while `~/.claude` works,
+/// as in the official examples. So the relay is a copy of this executable
+/// placed there; a `~/` path also avoids Git Bash eating backslashes.
+const RELAY_COMMAND: &str = "~/.claude/ai-usage-hud/relay.exe --relay";
+
+fn relay_path() -> Option<PathBuf> {
+    dirs::home_dir().map(|h| h.join(".claude").join("ai-usage-hud").join("relay.exe"))
+}
+
+/// Copy (or refresh after an update) the relay into `~/.claude/ai-usage-hud/`.
+pub fn install_relay(exe: &str) -> Result<(), String> {
+    let dest = relay_path().ok_or("home directory not found")?;
+    let src = PathBuf::from(exe);
+    if dest == src {
+        return Ok(());
+    }
+    let same = match (fs::metadata(&src), fs::metadata(&dest)) {
+        (Ok(a), Ok(b)) => a.len() == b.len() && a.modified().ok() <= b.modified().ok(),
+        _ => false,
+    };
+    if same {
+        return Ok(());
+    }
+    if let Some(dir) = dest.parent() {
+        fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    fs::copy(&src, &dest).map(|_| ()).map_err(|e| e.to_string())
+}
+
+/// Keep the relay copy current when the app itself was updated.
+pub fn refresh_relay_if_connected(exe: &str) {
+    if detect().connected {
+        let _ = install_relay(exe);
+    }
 }
 
 /// Remove the relay; restore the user's previous status line if there was one.
@@ -230,11 +298,23 @@ mod tests {
     }
 
     #[test]
-    fn relay_command_uses_forward_slashes() {
-        assert_eq!(
-            relay_command(r"C:\Users\me\AppData\Local\AI Usage HUD\ai-usage-hud.exe"),
-            r#""C:/Users/me/AppData/Local/AI Usage HUD/ai-usage-hud.exe" --relay"#
-        );
+    fn relay_command_has_no_backslashes_or_appdata() {
+        assert!(!RELAY_COMMAND.contains('\\') && RELAY_COMMAND.starts_with("~/.claude/"));
+    }
+
+    #[test]
+    fn merge_keeps_highest_value_in_the_same_window() {
+        let w = |p: f64, r: u64| json!({ "usedPercentage": p, "resetsAt": r });
+        let far = now_secs() + 10_000;
+        // stale session reports less in the same window -> keep the fresh value
+        assert_eq!(merge_window(&w(38.0, far), &w(21.0, far))["usedPercentage"], 38.0);
+        // new window (later reset) wins even with a lower value
+        assert_eq!(merge_window(&w(90.0, far), &w(5.0, far + 18_000))["usedPercentage"], 5.0);
+        // older window from a stale session never replaces the current one
+        assert_eq!(merge_window(&w(10.0, far), &w(80.0, far - 18_000))["usedPercentage"], 10.0);
+        // missing in the new payload: keep while not reset, drop once expired
+        assert_eq!(merge_window(&w(38.0, far), &Value::Null)["usedPercentage"], 38.0);
+        assert!(merge_window(&w(38.0, 1), &Value::Null).is_null());
     }
 
     #[test]

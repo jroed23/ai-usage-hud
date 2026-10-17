@@ -297,7 +297,7 @@ function About() {
         Independent open-source project (MIT). Not affiliated with, endorsed by, or sponsored by
         Anthropic or any other AI provider. Names and marks belong to their owners.
       </p>
-      <p className="hint">Version 0.1.0</p>
+      <p className="hint">Version 0.1.1</p>
     </section>
   );
 }
