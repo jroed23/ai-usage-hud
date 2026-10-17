@@ -150,9 +150,15 @@ pub fn connect(exe: &str) -> Result<(), String> {
     } else if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
-    settings["statusLine"] =
-        json!({ "type": "command", "command": format!("\"{}\" --relay", exe) });
+    settings["statusLine"] = json!({ "type": "command", "command": relay_command(exe) });
     write_settings(&path, &settings)
+}
+
+/// Claude Code runs status line commands through Git Bash on Windows, where
+/// backslashes in the path are eaten as escapes and the command silently fails.
+/// Forward slashes work in Git Bash, cmd and PowerShell alike.
+fn relay_command(exe: &str) -> String {
+    format!("\"{}\" --relay", exe.replace('\\', "/"))
 }
 
 /// Remove the relay; restore the user's previous status line if there was one.
@@ -221,6 +227,14 @@ mod tests {
         assert!(parse_settings(Ok(b"{ not json".to_vec())).is_err());
         assert!(parse_settings(Ok(b"[1,2]".to_vec())).is_err());
         assert_eq!(parse_settings(Ok(br#"{"a":1}"#.to_vec())).unwrap()["a"], 1);
+    }
+
+    #[test]
+    fn relay_command_uses_forward_slashes() {
+        assert_eq!(
+            relay_command(r"C:\Users\me\AppData\Local\AI Usage HUD\ai-usage-hud.exe"),
+            r#""C:/Users/me/AppData/Local/AI Usage HUD/ai-usage-hud.exe" --relay"#
+        );
     }
 
     #[test]

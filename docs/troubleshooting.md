@@ -15,3 +15,5 @@
 **Connected but "Waiting for the first Claude Code response" never ends** - the status line is a feature of the Claude Code CLI (`claude` in a terminal). Sessions in other front ends may not run it. Start `claude`, send a message, and the numbers appear.
 
 **After installing the app, the HUD says Disconnected** - the status line stores the path of the executable. If you moved or reinstalled the app, click Disconnect then Connect again.
+
+**Status line never runs / HUD stays on "—" even after replying** - on Windows, Claude Code runs the status line through Git Bash, which eats backslashes in the command path. Since v0.1.1 the app writes the path with forward slashes. If you connected with v0.1.0, click Disconnect then Connect (or edit `statusLine.command` in `~/.claude/settings.json` to use `/`). The status line also needs the folder to be trusted and a normal interactive `claude` session; verify with `claude --debug` (look for "Status line command skipped").
