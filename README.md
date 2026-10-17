@@ -36,6 +36,8 @@ Claude Code can run a command and pipe JSON session data to it (the *status line
 
 Usage numbers appear after Claude Code's first response in a session. Limits are only reported for Claude.ai Pro and Max subscribers.
 
+**Where updates come from.** Your plan limits are shared by every Claude surface, but only **Claude Code in a terminal** (the `claude` CLI) runs the status line that feeds the HUD. The Claude desktop app and the VS Code extension do not, so usage from them shows up the next time a terminal session gets a response. When the data is older than 5 minutes the HUD greys out the number and tells you how old it is.
+
 ## Build
 
 Requirements: Node 20+, pnpm, Rust (stable), Visual Studio Build Tools (C++), WebView2.

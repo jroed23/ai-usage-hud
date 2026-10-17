@@ -2,6 +2,11 @@
 
 All notable changes are documented here. Format based on Keep a Changelog; versions follow SemVer.
 
+## [0.1.2] - 2026-10-16
+
+### Added
+- Stale data indicator: after 5 minutes without an update the percentage turns grey and the panel explains that only terminal Claude Code sessions send usage (the desktop app and VS Code do not).
+
 ## [0.1.1] - 2026-10-16
 
 ### Fixed

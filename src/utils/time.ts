@@ -23,3 +23,10 @@ export function formatReset(resetsAtSec: number | undefined, nowMs = Date.now())
   const d = Math.floor(h / 24);
   return `in ${d}d ${h % 24}h`;
 }
+
+/** Data older than this is shown greyed out: it may no longer match the real usage. */
+export const STALE_AFTER_MS = 5 * 60 * 1000;
+
+export function isStale(lastUpdatedMs: number | undefined, now = Date.now()): boolean {
+  return lastUpdatedMs !== undefined && now - lastUpdatedMs > STALE_AFTER_MS;
+}

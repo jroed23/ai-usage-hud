@@ -17,3 +17,5 @@
 **After installing the app, the HUD says Disconnected** - the status line stores the path of the executable. If you moved or reinstalled the app, click Disconnect then Connect again.
 
 **Status line never runs / HUD stays on "—" even after replying** - on Windows, Claude Code runs the status line through Git Bash, which eats backslashes in the command path. Since v0.1.1 the app writes the path with forward slashes. If you connected with v0.1.0, click Disconnect then Connect (or edit `statusLine.command` in `~/.claude/settings.json` to use `/`). The status line also needs the folder to be trusted and a normal interactive `claude` session; verify with `claude --debug` (look for "Status line command skipped").
+
+**The HUD is behind what the VS Code extension or claude.ai shows** - only terminal sessions send data. Data older than 5 minutes is greyed out; send any message in a terminal `claude` session to sync.

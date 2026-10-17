@@ -8,6 +8,7 @@ Only integrations with an **official** data source are implemented. Research dat
 - **Metrics:** `rate_limits.five_hour` and `seven_day` (`used_percentage`, `resets_at`), `context_window.used_percentage`, `model.display_name`.
 - **Auth:** none (local).
 - **Limits:** `rate_limits` is only present for claude.ai Pro/Max subscribers and after the first API response of a session; each window may be missing and is dropped by Claude Code after its reset. The data refreshes only while Claude Code runs.
+- **Surfaces (tested 2026-10-16):** terminal CLI updates the HUD on every response; the Claude desktop app and the VS Code extension do not run the status line, so they never send data. Their usage is still counted in the limits and appears at the next terminal update.
 - **Rejected:** the undocumented `/api/oauth/usage` endpoint (private token use).
 
 ## Researched, not implemented

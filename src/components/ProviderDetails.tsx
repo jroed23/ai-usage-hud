@@ -1,5 +1,5 @@
 import type { UsageData, UsageProvider } from "../types/usage";
-import { formatAgo } from "../utils/time";
+import { formatAgo, isStale } from "../utils/time";
 import { MetricBar } from "./MetricBar";
 import { ProviderIcon } from "./ProviderIcon";
 
@@ -43,7 +43,15 @@ export function ProviderDetails({
       {data?.lastUpdated !== undefined && (
         <div className="kv">
           <span>Updated</span>
-          <span>{formatAgo(data.lastUpdated, now)}</span>
+          <span className={isStale(data.lastUpdated, now) ? "stale-text" : undefined}>
+            {formatAgo(data.lastUpdated, now)}
+          </span>
+        </div>
+      )}
+      {data?.providerId === "claude" && isStale(data.lastUpdated, now) && (
+        <div className="note-sub stale-note">
+          May be outdated. Only Claude Code in a terminal sends usage; the desktop app and VS Code
+          do not. Send a message in a terminal <code>claude</code> session to sync.
         </div>
       )}
     </div>

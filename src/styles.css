@@ -428,3 +428,16 @@ h2 {
   padding-left: 18px;
   line-height: 1.6;
 }
+
+/* Data older than STALE_AFTER_MS */
+.pct-stale,
+.stale-text {
+  color: var(--muted);
+}
+.stale-note {
+  color: var(--warn);
+}
+.stale-note code {
+  font-family: inherit;
+  font-weight: 600;
+}

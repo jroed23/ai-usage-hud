@@ -7,7 +7,7 @@ import { useAutoSize, usePersistedPosition } from "../hooks/useHudWindow";
 import { useHudStore } from "../stores/hudStore";
 import type { UsageData, UsageProvider } from "../types/usage";
 import { levelFor, metricPercent } from "../utils/percent";
-import { formatAgo } from "../utils/time";
+import { formatAgo, isStale } from "../utils/time";
 import { ProviderDetails } from "./ProviderDetails";
 import { ProviderIcon } from "./ProviderIcon";
 
@@ -191,11 +191,18 @@ function Chip({
   onClick: () => void;
 }) {
   const percent = primaryPercent(data);
+  // Re-evaluated on every poll render (the usage object changes each refresh).
+  const stale = isStale(data?.lastUpdated);
+  const tone = percent === undefined ? "pct-na" : stale ? "pct-stale" : `lvl-${levelFor(percent)}`;
   return (
-    <div className="chip" onClick={onClick}>
+    <div
+      className="chip"
+      onClick={onClick}
+      title={stale ? `Last data ${formatAgo(data?.lastUpdated)}: run claude in a terminal to sync` : undefined}
+    >
       <ProviderIcon provider={provider} dot={dotFor(data)} />
       {showPercent && (
-        <span className={percent === undefined ? "pct pct-na" : `pct lvl-${levelFor(percent)}`}>
+        <span className={`pct ${tone}`}>
           {percent === undefined ? "—" : `${Math.round(percent)}%`}
         </span>
       )}

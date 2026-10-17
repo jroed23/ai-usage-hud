@@ -64,3 +64,13 @@ describe("multi-monitor position", () => {
     expect(resolvePosition(undefined, [m1], size)).toEqual({ x: 1920 - 100 - 24, y: 24 });
   });
 });
+
+import { STALE_AFTER_MS, isStale } from "../src/utils/time";
+
+describe("staleness", () => {
+  it("flags data older than the threshold only", () => {
+    expect(isStale(undefined, 0)).toBe(false);
+    expect(isStale(0, STALE_AFTER_MS)).toBe(false);
+    expect(isStale(0, STALE_AFTER_MS + 1)).toBe(true);
+  });
+});
